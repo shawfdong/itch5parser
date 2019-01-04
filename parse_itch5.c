@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
     }
     msg_length = bswap_16(msg_header);
     if (fread((void*)m, sizeof(char), msg_length, f_input) < msg_length) {
-          fprintf(stderr, "Error reading message: %s\n", strerror(errno));
+        fprintf(stderr, "Error reading input file: %s\n", strerror(errno));
         goto panic;
     }
 
