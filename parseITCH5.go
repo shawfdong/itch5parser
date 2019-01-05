@@ -23,13 +23,11 @@ func check(e error) {
 }
 
 // parseTimestamp parses the Timestamp field in a message
-func parseTimestamp(ts []byte) uint64 {
+func parseTimestamp(b []byte) uint64 {
 	var timestamp uint64
-	buffer := make([]byte, 8)
-	for i := 2; i < 8; i++ {
-		buffer[i] = ts[i-2]
-	}
-	reader := bytes.NewReader(buffer)
+	b[0] = 0
+	b[1] = 0
+	reader := bytes.NewReader(b)
 	err := binary.Read(reader, binary.BigEndian, &timestamp)
 	check(err)
 	return timestamp
@@ -176,7 +174,7 @@ func main() {
 	var msgLength uint16
 	var rMsgHeader *bytes.Reader
 	for {
-		count, err := fInput.Read(msgHeader)
+		count, _ := fInput.Read(msgHeader)
 		if count < 2 {
 			// EOF
 			fmt.Printf("=========== Parsing ITCH v5.0 ends   ===========\n")
@@ -184,12 +182,15 @@ func main() {
 		}
 
 		rMsgHeader = bytes.NewReader(msgHeader)
-		err = binary.Read(rMsgHeader, binary.BigEndian, &msgLength)
+		err := binary.Read(rMsgHeader, binary.BigEndian, &msgLength)
 		check(err)
 
+		// message buffer
 		message := make([]byte, msgLength)
-		_, err = fInput.Read(message)
-		check(err)
+		count, _ = fInput.Read(message)
+		if count < int(msgLength) {
+			panic("Error reading input file")
+		}
 
 		t := message[0]
 		switch t {
@@ -197,7 +198,7 @@ func main() {
 			if parseFlag['S'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				eventCode := message[11]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%c\n",
@@ -210,7 +211,7 @@ func main() {
 			if parseFlag['R'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				stock := parseStock(message[11:19])
 				marketCategory := message[19]
 				financialStatusIndicator := message[20]
@@ -241,7 +242,7 @@ func main() {
 			if parseFlag['H'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				stock := parseStock(message[11:19])
 				tradingState := message[19]
 				reserved := message[20]
@@ -257,7 +258,7 @@ func main() {
 			if parseFlag['Y'] {
 				locateCode := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				stock := parseStock(message[11:19])
 				regSHOAction := message[19]
 				_, err = fmt.Fprintf(fOutput[t],
@@ -271,7 +272,7 @@ func main() {
 			if parseFlag['L'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				mpid := message[11:15]
 				stock := parseStock(message[15:23])
 				primaryMarketMaker := message[23]
@@ -289,7 +290,7 @@ func main() {
 			if parseFlag['V'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				level1 := parsePrice8(message[11:19])
 				level2 := parsePrice8(message[19:27])
 				level3 := parsePrice8(message[27:35])
@@ -306,7 +307,7 @@ func main() {
 			if parseFlag['W'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				breachedLevel := message[11]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%c\n",
@@ -319,7 +320,7 @@ func main() {
 			if parseFlag['K'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				stock := parseStock(message[11:19])
 				ipoQuotationReleaseTime := parseUint32(message[19:23])
 				ipoQuotationReleaseQualifier := message[23]
@@ -337,7 +338,7 @@ func main() {
 			if parseFlag['J'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				stock := parseStock(message[11:19])
 				acrp := parsePrice4(message[19:23])
 				uacp := parsePrice4(message[23:27])
@@ -355,7 +356,7 @@ func main() {
 			if parseFlag['h'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				stock := parseStock(message[11:19])
 				marketCode := message[19]
 				operationalHaltAction := message[20]
@@ -370,7 +371,7 @@ func main() {
 			if parseFlag['A'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				orderReferenceNumber := parseUint64(message[11:19])
 				buySellIndicator := message[19]
 				shares := parseUint32(message[20:24])
@@ -388,7 +389,7 @@ func main() {
 			if parseFlag['F'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				orderReferenceNumber := parseUint64(message[11:19])
 				buySellIndicator := message[19]
 				shares := parseUint32(message[20:24])
@@ -407,7 +408,7 @@ func main() {
 			if parseFlag['E'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				orderReferenceNumber := parseUint64(message[11:19])
 				executedShares := parseUint32(message[19:23])
 				matchNumber := parseUint64(message[23:31])
@@ -422,7 +423,7 @@ func main() {
 			if parseFlag['C'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				orderReferenceNumber := parseUint64(message[11:19])
 				executedShares := parseUint32(message[19:23])
 				matchNumber := parseUint64(message[23:31])
@@ -441,7 +442,7 @@ func main() {
 			if parseFlag['X'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				orderReferenceNumber := parseUint64(message[11:19])
 				cancelledShares := parseUint32(message[19:23])
 				_, err = fmt.Fprintf(fOutput[t],
@@ -455,7 +456,7 @@ func main() {
 			if parseFlag['D'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				orderReferenceNumber := parseUint64(message[11:19])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d\n",
@@ -468,7 +469,7 @@ func main() {
 			if parseFlag['U'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				originalOrderReferenceNumber := parseUint64(message[11:19])
 				newOrderReferenceNumber := parseUint64(message[19:27])
 				shares := parseUint32(message[27:31])
@@ -485,7 +486,7 @@ func main() {
 			if parseFlag['P'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				orderReferenceNumber := parseUint64(message[11:19])
 				buySellIndicator := message[19]
 				shares := parseUint32(message[20:24])
@@ -504,7 +505,7 @@ func main() {
 			if parseFlag['Q'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				shares := parseUint64(message[11:19])
 				stock := parseStock(message[19:27])
 				crossPrice := parsePrice4(message[27:31])
@@ -523,7 +524,7 @@ func main() {
 			if parseFlag['B'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				matchNumber := parseUint64(message[11:19])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d\n",
@@ -536,7 +537,7 @@ func main() {
 			if parseFlag['I'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				pairedShares := parseUint64(message[11:19])
 				imbalanceShares := parseUint64(message[19:27])
 				imbalanceDirection := message[27]
@@ -561,7 +562,7 @@ func main() {
 			if parseFlag['N'] {
 				stockLocate := parseUint16(message[1:3])
 				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[5:11])
+				timestamp := parseTimestamp(message[3:11])
 				stock := parseStock(message[11:19])
 				interestFlag := message[19]
 				_, err = fmt.Fprintf(fOutput[t],
