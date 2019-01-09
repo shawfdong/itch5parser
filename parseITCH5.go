@@ -22,66 +22,6 @@ func check(e error) {
 	}
 }
 
-// parseTimestamp parses the Timestamp field in a message
-func parseTimestamp(b []byte) uint64 {
-	var timestamp uint64
-	b[0] = 0
-	b[1] = 0
-	reader := bytes.NewReader(b)
-	err := binary.Read(reader, binary.BigEndian, &timestamp)
-	check(err)
-	return timestamp
-}
-
-// parseUint16 parses a big-endian uint16 in a message
-func parseUint16(b []byte) uint16 {
-	var n uint16
-	reader := bytes.NewReader(b)
-	err := binary.Read(reader, binary.BigEndian, &n)
-	check(err)
-	return n
-}
-
-// parseUint32 parses a big-endian uint32 in a message
-func parseUint32(b []byte) uint32 {
-	var n uint32
-	reader := bytes.NewReader(b)
-	err := binary.Read(reader, binary.BigEndian, &n)
-	check(err)
-	return n
-}
-
-// parseUint64 parses a big-endian uint64 in a message
-func parseUint64(b []byte) uint64 {
-	var n uint64
-	reader := bytes.NewReader(b)
-	err := binary.Read(reader, binary.BigEndian, &n)
-	check(err)
-	return n
-}
-
-// parsePrice4 parses a Price(4) in a message
-func parsePrice4(b []byte) uint32 {
-	var n uint32
-	reader := bytes.NewReader(b)
-	err := binary.Read(reader, binary.BigEndian, &n)
-	check(err)
-	return n
-}
-
-// parsePrice8 parses a Price(8) in a message
-func parsePrice8(b []byte) uint64 {
-	var n uint64
-	reader := bytes.NewReader(b)
-	err := binary.Read(reader, binary.BigEndian, &n)
-	check(err)
-	return n
-}
-
-func parseStock(s []byte) string {
-	return strings.TrimSpace(string(s))
-}
-
 func main() {
 	if len(os.Args) < 3 || len(os.Args) > 4 {
 		fmt.Printf("Usage: %s input_file_path output_folder_path [msg_types]\n\n", os.Args[0])
@@ -196,9 +136,11 @@ func main() {
 		switch t {
 		case 'S':
 			if parseFlag['S'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
 				eventCode := message[11]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%c\n",
@@ -209,13 +151,15 @@ func main() {
 			}
 		case 'R':
 			if parseFlag['R'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				stock := parseStock(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				stock := strings.TrimSpace(string(message[11:19]))
 				marketCategory := message[19]
 				financialStatusIndicator := message[20]
-				roundLotSize := parseUint32(message[21:25])
+				roundLotSize := binary.BigEndian.Uint32(message[21:25])
 				roundLotsOnly := message[25]
 				issueClassification := message[26]
 				issueSubType := message[27:29]
@@ -224,7 +168,7 @@ func main() {
 				ipoFlag := message[31]
 				luldReferencePriceTier := message[32]
 				etpFlag := message[33]
-				etpLeverageFactor := parseUint32(message[34:38])
+				etpLeverageFactor := binary.BigEndian.Uint32(message[34:38])
 				inverseIndicator := message[38]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%s,%c,%c,%d,%c,%c,%s,%c,%c,%c,%c,%c,%d,%c\n",
@@ -240,10 +184,12 @@ func main() {
 			}
 		case 'H':
 			if parseFlag['H'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				stock := parseStock(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				stock := strings.TrimSpace(string(message[11:19]))
 				tradingState := message[19]
 				reserved := message[20]
 				reason := message[21:25]
@@ -251,15 +197,17 @@ func main() {
 					"%c,%d,%d,%d.%09d,%s,%c,%c,%s\n",
 					t, stockLocate, trackingNumber,
 					timestamp/1000000000, timestamp%1000000000,
-					stock, tradingState, reserved, reason)
+					stock, tradingState, reserved, string(reason))
 				check(err)
 			}
 		case 'Y':
 			if parseFlag['Y'] {
-				locateCode := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				stock := parseStock(message[11:19])
+				locateCode := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				stock := strings.TrimSpace(string(message[11:19]))
 				regSHOAction := message[19]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%s,%c\n",
@@ -270,11 +218,13 @@ func main() {
 			}
 		case 'L':
 			if parseFlag['L'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
 				mpid := message[11:15]
-				stock := parseStock(message[15:23])
+				stock := strings.TrimSpace(string(message[15:23]))
 				primaryMarketMaker := message[23]
 				marketMakerMode := message[24]
 				marketParticipantState := message[25]
@@ -288,12 +238,14 @@ func main() {
 			}
 		case 'V':
 			if parseFlag['V'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				level1 := parsePrice8(message[11:19])
-				level2 := parsePrice8(message[19:27])
-				level3 := parsePrice8(message[27:35])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				level1 := binary.BigEndian.Uint64(message[11:19])
+				level2 := binary.BigEndian.Uint64(message[19:27])
+				level3 := binary.BigEndian.Uint64(message[27:35])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d.%08d,%d.%08d,%d.%08d\n",
 					t, stockLocate, trackingNumber,
@@ -305,9 +257,11 @@ func main() {
 			}
 		case 'W':
 			if parseFlag['W'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
 				breachedLevel := message[11]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%c\n",
@@ -318,13 +272,15 @@ func main() {
 			}
 		case 'K':
 			if parseFlag['K'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				stock := parseStock(message[11:19])
-				ipoQuotationReleaseTime := parseUint32(message[19:23])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				stock := strings.TrimSpace(string(message[11:19]))
+				ipoQuotationReleaseTime := binary.BigEndian.Uint32(message[19:23])
 				ipoQuotationReleaseQualifier := message[23]
-				ipoPrice := parsePrice4(message[24:28])
+				ipoPrice := binary.BigEndian.Uint32(message[24:28])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%s,%d,%c,%d.%04d\n",
 					t, stockLocate, trackingNumber,
@@ -336,14 +292,16 @@ func main() {
 			}
 		case 'J':
 			if parseFlag['J'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				stock := parseStock(message[11:19])
-				acrp := parsePrice4(message[19:23])
-				uacp := parsePrice4(message[23:27])
-				lacp := parsePrice4(message[27:31])
-				auctionCollarExtension := parseUint32(message[31:35])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				stock := strings.TrimSpace(string(message[11:19]))
+				acrp := binary.BigEndian.Uint32(message[19:23])
+				uacp := binary.BigEndian.Uint32(message[23:27])
+				lacp := binary.BigEndian.Uint32(message[27:31])
+				auctionCollarExtension := binary.BigEndian.Uint32(message[31:35])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%s,%d.%04d,%d.%04d,%d.%04d,%d\n",
 					t, stockLocate, trackingNumber,
@@ -354,10 +312,12 @@ func main() {
 			}
 		case 'h':
 			if parseFlag['h'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				stock := parseStock(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				stock := strings.TrimSpace(string(message[11:19]))
 				marketCode := message[19]
 				operationalHaltAction := message[20]
 				_, err = fmt.Fprintf(fOutput[t],
@@ -369,14 +329,16 @@ func main() {
 			}
 		case 'A':
 			if parseFlag['A'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				orderReferenceNumber := parseUint64(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				orderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
 				buySellIndicator := message[19]
-				shares := parseUint32(message[20:24])
-				stock := parseStock(message[24:32])
-				price := parsePrice4(message[32:36])
+				shares := binary.BigEndian.Uint32(message[20:24])
+				stock := strings.TrimSpace(string(message[24:32]))
+				price := binary.BigEndian.Uint32(message[32:36])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%c,%d,%s,%d.%04d\n",
 					t, stockLocate, trackingNumber,
@@ -387,31 +349,35 @@ func main() {
 			}
 		case 'F':
 			if parseFlag['F'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				orderReferenceNumber := parseUint64(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				orderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
 				buySellIndicator := message[19]
-				shares := parseUint32(message[20:24])
-				stock := parseStock(message[24:32])
-				price := parsePrice4(message[32:36])
+				shares := binary.BigEndian.Uint32(message[20:24])
+				stock := strings.TrimSpace(string(message[24:32]))
+				price := binary.BigEndian.Uint32(message[32:36])
 				attribution := message[36:40]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%c,%d,%s,%d.%04d,%s\n",
 					t, stockLocate, trackingNumber,
 					timestamp/1000000000, timestamp%1000000000,
 					orderReferenceNumber, buySellIndicator, shares, stock,
-					price/10000, price%10000, attribution)
+					price/10000, price%10000, string(attribution))
 				check(err)
 			}
 		case 'E':
 			if parseFlag['E'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				orderReferenceNumber := parseUint64(message[11:19])
-				executedShares := parseUint32(message[19:23])
-				matchNumber := parseUint64(message[23:31])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				orderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
+				executedShares := binary.BigEndian.Uint32(message[19:23])
+				matchNumber := binary.BigEndian.Uint64(message[23:31])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%d,%d\n",
 					t, stockLocate, trackingNumber,
@@ -421,14 +387,16 @@ func main() {
 			}
 		case 'C':
 			if parseFlag['C'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				orderReferenceNumber := parseUint64(message[11:19])
-				executedShares := parseUint32(message[19:23])
-				matchNumber := parseUint64(message[23:31])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				orderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
+				executedShares := binary.BigEndian.Uint32(message[19:23])
+				matchNumber := binary.BigEndian.Uint64(message[23:31])
 				printable := message[31]
-				executionPrice := parsePrice4(message[32:36])
+				executionPrice := binary.BigEndian.Uint32(message[32:36])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%d,%d,%c,%d.%04d\n",
 					t, stockLocate, trackingNumber,
@@ -440,11 +408,13 @@ func main() {
 			}
 		case 'X':
 			if parseFlag['X'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				orderReferenceNumber := parseUint64(message[11:19])
-				cancelledShares := parseUint32(message[19:23])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				orderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
+				cancelledShares := binary.BigEndian.Uint32(message[19:23])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%d\n",
 					t, stockLocate, trackingNumber,
@@ -454,10 +424,12 @@ func main() {
 			}
 		case 'D':
 			if parseFlag['D'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				orderReferenceNumber := parseUint64(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				orderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d\n",
 					t, stockLocate, trackingNumber,
@@ -467,13 +439,15 @@ func main() {
 			}
 		case 'U':
 			if parseFlag['U'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				originalOrderReferenceNumber := parseUint64(message[11:19])
-				newOrderReferenceNumber := parseUint64(message[19:27])
-				shares := parseUint32(message[27:31])
-				price := parsePrice4(message[31:35])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				originalOrderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
+				newOrderReferenceNumber := binary.BigEndian.Uint64(message[19:27])
+				shares := binary.BigEndian.Uint32(message[27:31])
+				price := binary.BigEndian.Uint32(message[31:35])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%d,%d,%d.%04d\n",
 					t, stockLocate, trackingNumber,
@@ -484,15 +458,17 @@ func main() {
 			}
 		case 'P':
 			if parseFlag['P'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				orderReferenceNumber := parseUint64(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				orderReferenceNumber := binary.BigEndian.Uint64(message[11:19])
 				buySellIndicator := message[19]
-				shares := parseUint32(message[20:24])
-				stock := parseStock(message[24:32])
-				price := parsePrice4(message[32:36])
-				matchNumber := parseUint64(message[36:44])
+				shares := binary.BigEndian.Uint32(message[20:24])
+				stock := strings.TrimSpace(string(message[24:32]))
+				price := binary.BigEndian.Uint32(message[32:36])
+				matchNumber := binary.BigEndian.Uint64(message[36:44])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%c,%d,%s,%d.%04d,%d\n",
 					t, stockLocate, trackingNumber,
@@ -503,13 +479,15 @@ func main() {
 			}
 		case 'Q':
 			if parseFlag['Q'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				shares := parseUint64(message[11:19])
-				stock := parseStock(message[19:27])
-				crossPrice := parsePrice4(message[27:31])
-				matchNumber := parseUint64(message[31:39])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				shares := binary.BigEndian.Uint64(message[11:19])
+				stock := strings.TrimSpace(string(message[19:27]))
+				crossPrice := binary.BigEndian.Uint32(message[27:31])
+				matchNumber := binary.BigEndian.Uint64(message[31:39])
 				crossType := message[39]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%s,%d.%04d,%d,%c\n",
@@ -522,10 +500,12 @@ func main() {
 			}
 		case 'B':
 			if parseFlag['B'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				matchNumber := parseUint64(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				matchNumber := binary.BigEndian.Uint64(message[11:19])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d\n",
 					t, stockLocate, trackingNumber,
@@ -535,16 +515,18 @@ func main() {
 			}
 		case 'I':
 			if parseFlag['I'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				pairedShares := parseUint64(message[11:19])
-				imbalanceShares := parseUint64(message[19:27])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				pairedShares := binary.BigEndian.Uint64(message[11:19])
+				imbalanceShares := binary.BigEndian.Uint64(message[19:27])
 				imbalanceDirection := message[27]
-				stock := parseStock(message[28:36])
-				farPrice := parsePrice4(message[36:40])
-				nearPrice := parsePrice4(message[40:44])
-				currentRefPrice := parsePrice4(message[44:48])
+				stock := strings.TrimSpace(string(message[28:36]))
+				farPrice := binary.BigEndian.Uint32(message[36:40])
+				nearPrice := binary.BigEndian.Uint32(message[40:44])
+				currentRefPrice := binary.BigEndian.Uint32(message[44:48])
 				crossType := message[48]
 				priceVariationIndicator := message[49]
 				_, err = fmt.Fprintf(fOutput[t],
@@ -560,10 +542,12 @@ func main() {
 			}
 		case 'N':
 			if parseFlag['N'] {
-				stockLocate := parseUint16(message[1:3])
-				trackingNumber := parseUint16(message[3:5])
-				timestamp := parseTimestamp(message[3:11])
-				stock := parseStock(message[11:19])
+				stockLocate := binary.BigEndian.Uint16(message[1:3])
+				trackingNumber := binary.BigEndian.Uint16(message[3:5])
+				message[3] = 0
+				message[4] = 0
+				timestamp := binary.BigEndian.Uint64(message[3:11])
+				stock := strings.TrimSpace(string(message[11:19]))
 				interestFlag := message[19]
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%s,%c\n",

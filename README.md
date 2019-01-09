@@ -91,7 +91,7 @@ If you only want to parse messages of type `R` and `A`:
 On my 2017 MacBook Pro, which has a 2.9 GHz Intel Kaby Lake 4-core CPU
 ([Core-i7-7820HQ][1]), it took about **120** seconds to process the 6GB
 daily feed *S051018-v50.txt* using the C parser; while it took a whooping
-**2500** seconds using the Go parser!
+**2200** seconds using the Go parser!
 
 The algorithms of the 2 parsers are largely identical. Needless to say,
 the performance of the Go parser is very disappointing.
