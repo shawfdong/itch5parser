@@ -162,7 +162,7 @@ func main() {
 				roundLotSize := binary.BigEndian.Uint32(message[21:25])
 				roundLotsOnly := message[25]
 				issueClassification := message[26]
-				issueSubType := message[27:29]
+				issueSubType := string(message[27:29])
 				authenticity := message[29]
 				shortSaleThresholdIndicator := message[30]
 				ipoFlag := message[31]
@@ -176,7 +176,7 @@ func main() {
 					timestamp/1000000000, timestamp%1000000000,
 					stock, marketCategory, financialStatusIndicator,
 					roundLotSize, roundLotsOnly, issueClassification,
-					string(issueSubType), authenticity,
+					issueSubType, authenticity,
 					shortSaleThresholdIndicator, ipoFlag,
 					luldReferencePriceTier, etpFlag, etpLeverageFactor,
 					inverseIndicator)
@@ -192,12 +192,12 @@ func main() {
 				stock := strings.TrimSpace(string(message[11:19]))
 				tradingState := message[19]
 				reserved := message[20]
-				reason := message[21:25]
+				reason := string(message[21:25])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%s,%c,%c,%s\n",
 					t, stockLocate, trackingNumber,
 					timestamp/1000000000, timestamp%1000000000,
-					stock, tradingState, reserved, string(reason))
+					stock, tradingState, reserved, reason)
 				check(err)
 			}
 		case 'Y':
@@ -223,7 +223,7 @@ func main() {
 				message[3] = 0
 				message[4] = 0
 				timestamp := binary.BigEndian.Uint64(message[3:11])
-				mpid := message[11:15]
+				mpid := string(message[11:15])
 				stock := strings.TrimSpace(string(message[15:23]))
 				primaryMarketMaker := message[23]
 				marketMakerMode := message[24]
@@ -232,7 +232,7 @@ func main() {
 					"%c,%d,%d,%d.%09d,%s,%s,%c,%c,%c\n",
 					t, stockLocate, trackingNumber,
 					timestamp/1000000000, timestamp%1000000000,
-					string(mpid), stock, primaryMarketMaker,
+					mpid, stock, primaryMarketMaker,
 					marketMakerMode, marketParticipantState)
 				check(err)
 			}
@@ -359,13 +359,13 @@ func main() {
 				shares := binary.BigEndian.Uint32(message[20:24])
 				stock := strings.TrimSpace(string(message[24:32]))
 				price := binary.BigEndian.Uint32(message[32:36])
-				attribution := message[36:40]
+				attribution := string(message[36:40])
 				_, err = fmt.Fprintf(fOutput[t],
 					"%c,%d,%d,%d.%09d,%d,%c,%d,%s,%d.%04d,%s\n",
 					t, stockLocate, trackingNumber,
 					timestamp/1000000000, timestamp%1000000000,
 					orderReferenceNumber, buySellIndicator, shares, stock,
-					price/10000, price%10000, string(attribution))
+					price/10000, price%10000, attribution)
 				check(err)
 			}
 		case 'E':
