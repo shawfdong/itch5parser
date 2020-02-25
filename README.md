@@ -14,7 +14,7 @@ convert big-endian integers to little-endian.
 
 In the C implementation, we use the `bswap` macros to do the conversion.
 The [bswap](http://man7.org/linux/man-pages/man3/bswap.3.html)
-macros are part of GPU extensions, so they are readily available on
+macros are part of GNU extensions, so they are readily available on
 Linux systems. On systems where the `bswap` macros are unavailable,
 such as macOS, we define our own.
 
