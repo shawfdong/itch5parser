@@ -1,7 +1,7 @@
 # NASDAQ TotalView-ITCH 5.0 parsers written in C, Go and Rust
 
 Here are 3 parsers of NASDAQ TotalView-ITCH 5.0 outbound data feeds, written
-C and Go, respectively. The specification for NASDAQ TotalView-ITCH 5.0 can
+in C, Go and Rust, respectively. The specification for NASDAQ TotalView-ITCH 5.0 can
 be found at <https://www.nasdaqtrader.com/content/technicalsupport/specifications/dataproducts/NQTVITCHspecification.pdf>.
 
 All integer fields in ITCH data feeds are big-endian (network byte order)
